@@ -1,0 +1,25 @@
+{
+  "name": "MacroScan",
+  "short_name": "MacroScan",
+  "description": "Barcode meal log with a sodium budget and macro tracking.",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0F1318",
+  "theme_color": "#0F1318",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-maskable.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}

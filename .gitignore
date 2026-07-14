@@ -1,0 +1,10 @@
+# macOS / Windows / editor cruft
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.swp
+.idea/
+.vscode/
+
+# Local backups exported from the app
+macroscan-backup-*.json

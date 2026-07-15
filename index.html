@@ -37,7 +37,20 @@
     </div>
     <div class="msg err" id="scanerr"></div>
 
-    <h2>Or enter it by hand</h2>
+    <!-- quick add: favorites + recent -->
+    <section id="quickAddWrap" style="display:none">
+      <h2>Quick add</h2>
+      <div class="chips" id="quickAdd"></div>
+    </section>
+
+    <h2>Search by name</h2>
+    <div class="row">
+      <input type="text" id="searchQuery" placeholder="e.g. greek yogurt, ramen">
+      <button class="btn small" id="searchBtn" style="flex:0 0 auto">Search</button>
+    </div>
+    <div id="searchResults"></div>
+
+    <h2>Or enter a barcode</h2>
     <div class="row">
       <input type="text" id="manualCode" inputmode="numeric" placeholder="Barcode number, e.g. 038000138416">
       <button class="btn small" id="lookupBtn" style="flex:0 0 auto">Look up</button>
@@ -65,20 +78,35 @@
         <div class="nut"><div class="v"><span id="nCb">0</span><small> g</small></div><div class="l">Carbs</div></div>
         <div class="nut"><div class="v"><span id="nFt">0</span><small> g</small></div><div class="l">Fat</div></div>
       </div>
+      <label class="f">Meal</label>
+      <div class="meals" id="mealSelR">
+        <button data-meal="breakfast">Breakfast</button>
+        <button data-meal="lunch">Lunch</button>
+        <button data-meal="dinner">Dinner</button>
+        <button data-meal="snack">Snack</button>
+      </div>
       <div class="row">
+        <button class="btn secondary" id="favBtn" style="flex:0 0 auto" aria-label="Save to favorites">☆</button>
         <button class="btn" id="addBtn">Add to today's log</button>
       </div>
     </div>
 
-    <!-- custom food form -->
+    <!-- custom / edit food form -->
     <div class="card" id="customForm" style="display:none">
-      <div class="pname">Custom food</div>
+      <div class="pname" id="customTitle">Custom food</div>
       <label class="f">Name</label><input type="text" id="cName" placeholder="Chicken breast, 8 oz">
       <label class="f">Sodium (mg)</label><input type="number" id="cNa" inputmode="numeric" placeholder="0">
       <label class="f">Protein (g)</label><input type="number" id="cPr" inputmode="decimal" placeholder="0">
       <label class="f">Calories (kcal)</label><input type="number" id="cKc" inputmode="numeric" placeholder="0">
       <label class="f">Carbs (g)</label><input type="number" id="cCb" inputmode="decimal" placeholder="0">
       <label class="f">Fat (g)</label><input type="number" id="cFt" inputmode="decimal" placeholder="0">
+      <label class="f">Meal</label>
+      <div class="meals" id="mealSelC">
+        <button data-meal="breakfast">Breakfast</button>
+        <button data-meal="lunch">Lunch</button>
+        <button data-meal="dinner">Dinner</button>
+        <button data-meal="snack">Snack</button>
+      </div>
       <div class="row">
         <button class="btn secondary" id="cCancel">Cancel</button>
         <button class="btn" id="cAdd">Add to log</button>
@@ -107,6 +135,16 @@
 
   <!-- ================= HISTORY VIEW ================= -->
   <section class="view" id="view-history">
+    <h2>Insights</h2>
+    <div class="card" id="insights" style="margin-top:8px">
+      <div class="statgrid">
+        <div class="stat"><div class="v" id="stStreak">0</div><div class="l">Day streak under cap</div></div>
+        <div class="stat"><div class="v" id="stNa7"><span>0</span><small> mg</small></div><div class="l">Avg sodium · 7d</div></div>
+        <div class="stat"><div class="v" id="stNa30"><span>0</span><small> mg</small></div><div class="l">Avg sodium · 30d</div></div>
+        <div class="stat"><div class="v" id="stPr7"><span>0</span><small> g</small></div><div class="l">Avg protein · 7d</div></div>
+      </div>
+      <div class="status" id="stNote" style="margin-top:10px"></div>
+    </div>
     <h2>Last 7 days</h2>
     <div class="card" id="weekCard" style="margin-top:8px">
       <div class="weekbars" id="weekBars"></div>
@@ -132,11 +170,12 @@
         <button class="btn secondary" id="exportBtn">Export backup</button>
         <button class="btn secondary" id="importBtn">Import backup</button>
       </div>
+      <button class="btn secondary" id="exportCsv" style="margin-top:10px">Export history as CSV</button>
       <input type="file" id="importFile" accept="application/json" style="display:none">
       <button class="btn secondary" id="clearToday" style="margin-top:10px">Clear today's log</button>
     </div>
     <div class="msg info show" style="margin-top:16px">
-      Tip: once this page is hosted, open it in your phone browser and use “Add to Home Screen” to install it like an app.
+      Tip: on your phone, open the hosted URL and use “Add to Home Screen” to install it like an app.
     </div>
   </section>
 </div>

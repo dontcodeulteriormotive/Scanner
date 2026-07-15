@@ -121,6 +121,45 @@ label.f{display:block;font-size:12px;color:var(--muted);margin:12px 0 6px}
 .weeklegend .dotNa{background:var(--sodium)}
 .weeklegend .dotPr{background:var(--protein)}
 
+/* ---------- meal selector (segmented) ---------- */
+.meals{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:6px}
+.meals button{padding:9px 4px;border-radius:10px;border:1px solid var(--line);background:var(--surface2);color:var(--muted);font-size:12.5px;cursor:pointer}
+.meals button.on{border-color:var(--sodium);color:var(--text);background:rgba(240,169,59,.12)}
+
+/* ---------- favorite button on result card ---------- */
+#favBtn{width:auto;padding:14px 16px;font-size:18px;line-height:1;color:var(--sodium)}
+
+/* ---------- quick add chips ---------- */
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.chip{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:7px 12px 7px 8px;max-width:100%}
+.chip.fav{border-color:rgba(240,169,59,.4)}
+.chip .star{background:none;border:0;color:var(--faint);font-size:15px;cursor:pointer;padding:0 2px;line-height:1}
+.chip.fav .star{color:var(--sodium)}
+.chip .t{font-size:13px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px}
+.chip .na{font-size:11.5px;color:var(--sodium);font-weight:600;cursor:pointer;flex:0 0 auto}
+
+/* ---------- search results ---------- */
+.sresult{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:11px 14px;margin-top:8px;cursor:pointer}
+.sresult:active{transform:scale(.99)}
+.sresult .info{flex:1;min-width:0}
+.sresult .n{font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sresult .b{font-size:12px;color:var(--muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sresult .go{flex:0 0 auto;color:var(--sodium);font-size:20px;font-weight:700}
+
+/* ---------- meal subheader in today's log ---------- */
+.mealhead{display:flex;align-items:baseline;justify-content:space-between;margin:16px 2px 2px}
+.mealhead .ml{font-family:var(--display);font-size:12px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.mealhead .ms{font-size:11.5px;color:var(--muted)}
+.mealhead .ms b{color:var(--sodium);font-weight:600}
+.entry .edit{flex:0 0 auto;background:none;border:0;color:var(--faint);font-size:15px;padding:6px;cursor:pointer}
+
+/* ---------- insights ---------- */
+.statgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.stat{background:var(--surface2);border-radius:10px;padding:11px 12px}
+.stat .v{font-family:var(--display);font-size:20px;font-weight:700}
+.stat .v small{font-size:11px;color:var(--muted);font-weight:500}
+.stat .l{font-size:11px;color:var(--muted);margin-top:1px}
+
 /* ---------- targets ---------- */
 .tgt{display:flex;align-items:center;gap:12px;margin-top:10px}
 .tgt label{flex:1;font-size:14px}

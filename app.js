@@ -7,9 +7,10 @@ const store = {
 
 /* ============ state ============ */
 const todayKey = () => { const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); };
-let targets   = store.get('targets', { na:2000, pr:180, kc:2600 });
+let targets   = store.get('targets', { na:2000, pr:180, kc:2600, water:8 });
 let log       = store.get('log:'+todayKey(), []);
 let favorites = store.get('favorites', []);
+let water     = store.get('water:'+todayKey(), 0);
 let current   = null;   // { name, brand, perServing:{...}|null, per100:{...}|null, servingLabel }
 let basis     = 'serving';
 let qty       = 1;
@@ -18,6 +19,7 @@ let mealC     = 'snack';   // meal chosen on the custom / edit form
 let editingId = null;      // entry id currently being edited (via custom form)
 
 const $ = id => document.getElementById(id);
+const waterGoal = () => targets.water || 8;
 
 /* ============ meals ============ */
 const MEAL_ORDER = ['breakfast','lunch','dinner','snack'];
@@ -76,6 +78,7 @@ async function startCamera(){
   $('scanidle').style.display='none';
   $('reticle').style.display='flex';
   $('scanhint').style.display='block';
+  $('stopScan').style.display='block';
 
   if('BarcodeDetector' in window){
     let detector;
@@ -109,6 +112,7 @@ function stopCamera(){
   $('scanidle').style.display='flex';
   $('reticle').style.display='none';
   $('scanhint').style.display='none';
+  $('stopScan').style.display='none';
 }
 function loadScript(src){ return new Promise((res,rej)=>{ const s=document.createElement('script'); s.src=src; s.onload=res; s.onerror=rej; document.head.appendChild(s); }); }
 
@@ -122,11 +126,15 @@ function onCode(code){
 }
 
 $('startScan').addEventListener('click', startCamera);
+$('stopScan').addEventListener('click', stopCamera);
 $('lookupBtn').addEventListener('click', ()=>{ const c=$('manualCode').value.replace(/\D/g,''); if(c) lookup(c); });
 $('manualCode').addEventListener('keydown', e=>{ if(e.key==='Enter'){ const c=$('manualCode').value.replace(/\D/g,''); if(c) lookup(c);} });
 
 /* ============ Open Food Facts: parse + barcode lookup + name search ============ */
 const g = (v)=> (typeof v==='number' && isFinite(v)) ? v : null;
+// flag foods whose sodium is a big share of the daily cap (>=30%, min 400mg)
+const sodiumFlag = mg => mg>0 && mg >= Math.max(400, targets.na*0.3);
+
 function parseProduct(p, code){
   const n = p.nutriments || {};
   const per100 = {
@@ -150,6 +158,7 @@ function parseProduct(p, code){
     servingLabel: p.serving_size || 'serving'
   };
 }
+function cacheProduct(code, parsed){ if(code && parsed) store.set('prod:'+code, parsed); }
 function showResultFrom(parsed){
   current = parsed;
   basis = parsed.perServing ? 'serving' : '100';
@@ -168,11 +177,16 @@ async function lookup(code){
     if(!data || data.status===0 || !data.product) throw new Error('notfound');
     const parsed = parseProduct(data.product, code);
     if(!parsed) throw new Error('nonut');
+    cacheProduct(code, parsed);
     showResultFrom(parsed);
   }catch(e){
-    if(e.message==='notfound') showErr('That barcode isn’t in Open Food Facts yet. Try searching by name, or use “Log a food without a barcode.”');
+    if(e.message==='notfound') showErr('That barcode is not in Open Food Facts yet. Try searching by name, or use "Log a food without a barcode."');
     else if(e.message==='nonut') showErr('Product found, but it has no nutrition data on file. Log it manually instead.');
-    else showErr('Couldn’t reach the food database. Check your connection and try again.');
+    else {
+      const cached = store.get('prod:'+code, null);
+      if(cached){ showResultFrom(cached); toast('Loaded from saved data'); }
+      else showErr('Could not reach the food database. Check your connection and try again.');
+    }
   }
   showBtnLoading('lookupBtn','Look up',false);
 }
@@ -192,12 +206,18 @@ async function search(query){
       .map(p=>({ p, parsed: parseProduct(p, p.code) }))
       .filter(x=> x.parsed && x.parsed.name && x.parsed.name.trim() && !/^Item /.test(x.parsed.name))
       .slice(0, 15);
+    rows.forEach(x=>{ if(x.p && x.p.code) cacheProduct(x.p.code, x.parsed); });
     if(!rows.length){ box.innerHTML='<div class="empty">No matches with nutrition data. Try another term, or log it manually.</div>'; }
     else {
       box.innerHTML='';
       rows.forEach(({parsed})=>{
         const div=document.createElement('div'); div.className='sresult';
-        div.innerHTML='<div class="info"><div class="n"></div><div class="b"></div></div><span class="go">＋</span>';
+        const srcp = parsed.perServing || parsed.per100;
+        const rowNa = srcp && srcp.na!=null ? Math.round(srcp.na) : null;
+        const naTxt = rowNa!=null ? (rowNa+' mg'+(parsed.perServing?'':'/100g')) : '';
+        div.innerHTML='<div class="info"><div class="n"></div><div class="b"></div></div>'
+          +(rowNa!=null?'<span class="rna'+(sodiumFlag(rowNa)?' hi':'')+'">'+naTxt+'</span>':'')
+          +'<span class="go">＋</span>';
         div.querySelector('.n').textContent = parsed.name;
         div.querySelector('.b').textContent = parsed.brand || (parsed.perServing?'per serving':'per 100 g');
         div.addEventListener('click', ()=>{ showResultFrom(parsed); });
@@ -205,7 +225,7 @@ async function search(query){
       });
     }
   }catch(e){
-    box.innerHTML='<div class="empty">Couldn’t reach the food database. Check your connection and try again.</div>';
+    box.innerHTML='<div class="empty">Could not reach the food database. Check your connection and try again.</div>';
   }
   showBtnLoading('searchBtn','Search',false);
 }
@@ -218,11 +238,24 @@ function showBtnLoading(id,label,on){ $(id).disabled=on; $(id).textContent = on?
 function computedFromCurrent(){
   const src = basis==='serving' ? current.perServing : current.per100;
   const s = qty, r=(v,dp=0)=> v==null?0: Math.round(v*s*(dp?10:1))/(dp?10:1);
+  const label = basis==='serving' ? current.servingLabel : '100 g';
   return {
     name: current.name,
-    detail: qty+' × '+(basis==='serving'?current.servingLabel:'100 g'),
+    detail: (Math.round(qty*100)/100)+' × '+label,
     na:r(src.na), pr:r(src.pr,1), kc:r(src.kc), cb:r(src.cb,1), ft:r(src.ft,1)
   };
+}
+function updateNutrients(){
+  const src = basis==='serving' ? current.perServing : current.per100;
+  const f=(v,dp=0)=> v==null? '—' : (Math.round(v*qty*(dp?10:1))/(dp?10:1));
+  $('qVal').textContent = Math.round(qty*100)/100;
+  $('qUnit').textContent = basis==='serving' ? ('× '+current.servingLabel) : '× 100 g';
+  $('nNa').textContent=f(src.na); $('nPr').textContent=f(src.pr,1); $('nKc').textContent=f(src.kc); $('nCb').textContent=f(src.cb,1); $('nFt').textContent=f(src.ft,1);
+  const naVal = src.na==null?0:Math.round(src.na*qty);
+  const flag=$('sFlag');
+  if(sodiumFlag(naVal)){ flag.textContent='⚠ High sodium — '+Math.round(naVal/targets.na*100)+'% of your daily cap'; flag.style.display='block'; }
+  else flag.style.display='none';
+  $('favBtn').textContent = isFavorite(computedFromCurrent()) ? '★' : '☆';
 }
 function renderResult(){
   $('rName').textContent = current.name;
@@ -231,20 +264,18 @@ function renderResult(){
   $('basis100').classList.toggle('on', basis==='100');
   $('basisServing').style.display = current.perServing? '' : 'none';
   $('basis100').style.display = current.per100? '' : 'none';
-  $('qVal').textContent = qty;
-  $('qUnit').textContent = basis==='serving' ? ('× '+current.servingLabel) : '× 100 g';
-  const src = basis==='serving' ? current.perServing : current.per100;
-  const f=(v,dp=0)=> v==null? '—' : (Math.round(v*qty*(dp?10:1))/(dp?10:1));
-  $('nNa').textContent=f(src.na); $('nPr').textContent=f(src.pr,1); $('nKc').textContent=f(src.kc); $('nCb').textContent=f(src.cb,1); $('nFt').textContent=f(src.ft,1);
+  $('gramsInput').style.display = basis==='100' ? 'block' : 'none';
+  if(basis==='100') $('gramsInput').value = Math.round(qty*100);
   paintMealSelector('mealSelR', mealR);
-  $('favBtn').textContent = isFavorite(computedFromCurrent()) ? '★' : '☆';
+  updateNutrients();
   $('result').style.display='block';
   $('result').scrollIntoView({behavior:'smooth',block:'nearest'});
 }
 $('basisServing').addEventListener('click',()=>{ basis='serving'; renderResult(); });
 $('basis100').addEventListener('click',()=>{ basis='100'; renderResult(); });
-$('qMinus').addEventListener('click',()=>{ qty=Math.max(0.5, +(qty-0.5).toFixed(1)); renderResult(); });
-$('qPlus').addEventListener('click',()=>{ qty=+(qty+0.5).toFixed(1); renderResult(); });
+$('qMinus').addEventListener('click',()=>{ qty=Math.max(0.5, +(qty-0.5).toFixed(2)); renderResult(); });
+$('qPlus').addEventListener('click',()=>{ qty=+(qty+0.5).toFixed(2); renderResult(); });
+$('gramsInput').addEventListener('input', ()=>{ const gv=parseFloat($('gramsInput').value); if(isFinite(gv)&&gv>0){ qty=gv/100; updateNutrients(); } });
 setupMealSelector('mealSelR', mealR, m=>{ mealR=m; });
 
 $('addBtn').addEventListener('click', ()=>{
@@ -352,7 +383,18 @@ function addEntry(e){
   log.push(e); persist(); toast();
   if($('view-today').classList.contains('on')) renderToday();
 }
-function removeEntry(id){ log = log.filter(x=>x.id!==id); persist(); renderToday(); }
+let lastDeleted=null;
+function removeEntry(id){
+  const idx=log.findIndex(x=>x.id===id);
+  if(idx<0) return;
+  lastDeleted={ entry:log[idx], index:idx };
+  log.splice(idx,1); persist(); renderToday();
+  toastAction('Deleted', 'Undo', ()=>{
+    if(!lastDeleted) return;
+    log.splice(Math.min(lastDeleted.index, log.length), 0, lastDeleted.entry);
+    lastDeleted=null; persist(); renderToday(); toast('Restored');
+  });
+}
 function persist(){ store.set('log:'+todayKey(), log); }
 
 function entryRow(e, opts){
@@ -399,6 +441,10 @@ function renderToday(){
   $('sumCb').textContent=Math.round(sum.cb); $('sumFt').textContent=Math.round(sum.ft);
   $('goalPr').textContent=targets.pr; $('goalKc').textContent=targets.kc;
 
+  water = store.get('water:'+todayKey(), 0);
+  $('waterCups').textContent = water;
+  $('waterGoal').textContent = waterGoal();
+
   const list=$('logList'); list.innerHTML='';
   if(!log.length){ list.innerHTML='<div class="empty">Nothing logged yet. Scan, search, or quick-add on the Scan tab.</div>'; return; }
 
@@ -416,6 +462,11 @@ function renderToday(){
     entries.forEach(e=> list.appendChild(entryRow(e, {edit:true, del:true})));
   });
 }
+
+/* ============ water ============ */
+function setWater(n){ water=Math.max(0,n); store.set('water:'+todayKey(), water); $('waterCups').textContent=water; }
+$('waterPlus').addEventListener('click', ()=> setWater(water+1));
+$('waterMinus').addEventListener('click', ()=> setWater(water-1));
 
 /* ============ history ============ */
 function allDayKeys(){
@@ -510,12 +561,13 @@ function renderHistory(){
 }
 
 /* ============ targets ============ */
-function loadTargets(){ $('tNa').value=targets.na; $('tPr').value=targets.pr; $('tKc').value=targets.kc; }
+function loadTargets(){ $('tNa').value=targets.na; $('tPr').value=targets.pr; $('tKc').value=targets.kc; $('tWater').value=waterGoal(); }
 $('saveTargets').addEventListener('click', ()=>{
   targets = {
     na: Math.max(1, parseInt($('tNa').value)||2000),
     pr: Math.max(1, parseInt($('tPr').value)||180),
-    kc: Math.max(1, parseInt($('tKc').value)||2600)
+    kc: Math.max(1, parseInt($('tKc').value)||2600),
+    water: Math.max(1, parseInt($('tWater').value)||8)
   };
   store.set('targets', targets); toast('Saved ✓');
 });
@@ -523,8 +575,8 @@ $('clearToday').addEventListener('click', ()=>{ if(confirm('Clear everything log
 
 /* ============ backup ============ */
 $('exportBtn').addEventListener('click', ()=>{
-  const data={ app:'MacroScan', exported:new Date().toISOString(), targets, favorites, days:{} };
-  allDayKeys().forEach(iso=>{ data.days[iso]=store.get('log:'+iso,[]); });
+  const data={ app:'MacroScan', exported:new Date().toISOString(), targets, favorites, days:{}, water:{} };
+  allDayKeys().forEach(iso=>{ data.days[iso]=store.get('log:'+iso,[]); const w=store.get('water:'+iso,0); if(w) data.water[iso]=w; });
   downloadFile(JSON.stringify(data,null,2), 'application/json', 'macroscan-backup-'+todayKey()+'.json');
   toast('Exported ✓');
 });
@@ -565,9 +617,10 @@ $('importFile').addEventListener('change', e=>{
       });
       if(data.targets){ targets=data.targets; store.set('targets',targets); loadTargets(); }
       if(Array.isArray(data.favorites)){ favorites=data.favorites; store.set('favorites',favorites); }
+      if(data.water){ Object.entries(data.water).forEach(([iso,n])=>{ if(/^\d{4}-\d{2}-\d{2}$/.test(iso)) store.set('water:'+iso, n); }); }
       log=store.get('log:'+todayKey(),[]);
       renderToday(); toast('Imported '+count+' items');
-    }catch(err){ alert('That file doesn’t look like a MacroScan backup.'); }
+    }catch(err){ alert('That file does not look like a MacroScan backup.'); }
     e.target.value='';
   };
   reader.readAsText(file);
@@ -578,6 +631,13 @@ function showErr(t){ const m=$('scanerr'); m.textContent=t; m.classList.add('sho
 function hideErr(){ $('scanerr').classList.remove('show'); }
 let toastT=null;
 function toast(t){ const el=$('toast'); el.textContent=t||'Logged ✓'; el.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>el.classList.remove('show'),1600); }
+function toastAction(text, actionLabel, cb){
+  const el=$('toast'); el.textContent=text+' ';
+  const b=document.createElement('button'); b.className='tundo'; b.textContent=actionLabel;
+  b.addEventListener('click', ()=>{ el.classList.remove('show'); clearTimeout(toastT); cb(); });
+  el.appendChild(b);
+  el.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>el.classList.remove('show'),4000);
+}
 
 loadTargets();
 renderToday();

@@ -1,6 +1,6 @@
 /* MacroScan service worker — offline app shell + smart runtime caching.
    Bump CACHE_VERSION whenever the shell files change to force an update. */
-const CACHE_VERSION = 'macroscan-v2';
+const CACHE_VERSION = 'macroscan-v3';
 const RUNTIME = 'macroscan-runtime-v1';
 
 /* App shell — cached on install so the app opens with no network.

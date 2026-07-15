@@ -30,6 +30,7 @@
       <video id="video" playsinline muted></video>
       <div class="reticle" id="reticle" style="display:none"><div class="frame"></div></div>
       <div class="hint" id="scanhint" style="display:none">Center the barcode in the frame</div>
+      <button class="stopcam" id="stopScan" style="display:none">■ Stop camera</button>
       <div class="idle" id="scanidle">
         <p>Point your camera at any food barcode. Nutrition comes from the Open Food Facts database.</p>
         <button class="btn small" id="startScan">Start camera</button>
@@ -71,6 +72,7 @@
         <div class="qty"><span id="qVal">1</span><small id="qUnit">serving</small></div>
         <button id="qPlus">+</button>
       </div>
+      <input type="number" id="gramsInput" inputmode="decimal" placeholder="or enter exact grams" style="display:none;margin-top:8px">
       <div class="nutgrid">
         <div class="nut sodium"><div class="v"><span id="nNa">0</span><small> mg</small></div><div class="l">Sodium</div></div>
         <div class="nut protein"><div class="v"><span id="nPr">0</span><small> g</small></div><div class="l">Protein</div></div>
@@ -78,6 +80,7 @@
         <div class="nut"><div class="v"><span id="nCb">0</span><small> g</small></div><div class="l">Carbs</div></div>
         <div class="nut"><div class="v"><span id="nFt">0</span><small> g</small></div><div class="l">Fat</div></div>
       </div>
+      <div class="sflag" id="sFlag" style="display:none"></div>
       <label class="f">Meal</label>
       <div class="meals" id="mealSelR">
         <button data-meal="breakfast">Breakfast</button>
@@ -129,6 +132,10 @@
       <div class="macro"><div class="v"><span id="sumKc">0</span><small> kcal</small></div><div class="l">Calories · goal <span id="goalKc">2600</span></div></div>
       <div class="macro"><div class="v"><span id="sumCb">0</span><small>g C</small> · <span id="sumFt">0</span><small>g F</small></div><div class="l">Carbs · Fat</div></div>
     </div>
+    <div class="water card" id="waterCard">
+      <div class="winfo"><div class="wv"><span id="waterCups">0</span> / <span id="waterGoal">8</span></div><div class="wl">cups of water today</div></div>
+      <div class="wctrl"><button id="waterMinus" aria-label="Remove a cup">−</button><button id="waterPlus" aria-label="Add a cup">＋</button></div>
+    </div>
     <h2>Logged today</h2>
     <div id="logList"></div>
   </section>
@@ -161,6 +168,7 @@
       <div class="tgt"><label>Sodium cap (mg)</label><input type="number" id="tNa" inputmode="numeric"></div>
       <div class="tgt"><label>Protein goal (g)</label><input type="number" id="tPr" inputmode="numeric"></div>
       <div class="tgt"><label>Calorie goal (kcal)</label><input type="number" id="tKc" inputmode="numeric"></div>
+      <div class="tgt"><label>Water goal (cups)</label><input type="number" id="tWater" inputmode="numeric"></div>
       <button class="btn" id="saveTargets" style="margin-top:16px">Save targets</button>
     </div>
     <h2>Data</h2>

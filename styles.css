@@ -11,7 +11,8 @@ html,body{height:100%}
 body{
   background:var(--bg); color:var(--text); font-family:var(--body);
   font-size:15px; line-height:1.45;
-  padding-bottom:calc(64px + env(safe-area-inset-bottom));
+  padding-bottom:env(safe-area-inset-bottom);
+  padding-left:calc(64px + env(safe-area-inset-left));
 }
 .wrap{max-width:480px;margin:0 auto;padding:16px 16px 24px}
 header.app{display:flex;align-items:baseline;justify-content:space-between;padding:14px 0 4px}
@@ -170,17 +171,20 @@ label.f{display:block;font-size:12px;color:var(--muted);margin:12px 0 6px}
 .msg.show{display:block}
 .msg.err{background:rgba(229,101,94,.12);color:#F2938E;border:1px solid rgba(229,101,94,.35)}
 .msg.info{background:var(--surface2);color:var(--muted);border:1px solid var(--line)}
-.toast{position:fixed;left:50%;bottom:calc(80px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(8px);
+.toast{position:fixed;left:calc(50% + 32px);bottom:calc(18px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(8px);
   background:var(--protein);color:#0F1318;font-family:var(--display);font-weight:700;font-size:14px;
   padding:11px 18px;border-radius:999px;opacity:0;pointer-events:none;transition:all .25s}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
-/* ---------- tab bar ---------- */
-nav{position:fixed;left:0;right:0;bottom:0;background:rgba(15,19,24,.92);backdrop-filter:blur(12px);
-  border-top:1px solid var(--line);display:flex;padding-bottom:env(safe-area-inset-bottom);z-index:10}
-nav button{flex:1;background:none;border:0;color:var(--faint);padding:10px 0 9px;cursor:pointer;font-family:var(--body)}
-nav button .ic{font-size:19px;display:block;line-height:1.2}
-nav button .tl{font-size:10.5px;letter-spacing:.04em}
+/* ---------- tab bar (left rail) ---------- */
+nav{position:fixed;top:0;bottom:0;left:0;width:64px;background:rgba(15,19,24,.92);backdrop-filter:blur(12px);
+  border-right:1px solid var(--line);display:flex;flex-direction:column;
+  padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom);
+  padding-left:env(safe-area-inset-left);z-index:10}
+nav button{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+  background:none;border:0;color:var(--faint);padding:10px 4px;cursor:pointer;font-family:var(--body)}
+nav button .ic{font-size:20px;display:block;line-height:1.1}
+nav button .tl{font-size:10.5px;letter-spacing:.03em}
 nav button.on{color:var(--sodium)}
 .view{display:none}.view.on{display:block}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
